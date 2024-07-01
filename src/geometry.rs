@@ -9,8 +9,8 @@ pub struct Sphere{
 }
 
 impl Sphere{
-	pub fn new(c: Vec3, r: f64) -> Sphere{
-		Sphere{ center: c, radius: r}
+	pub fn new(center: Vec3, radius: f64) -> Sphere{
+		Sphere{center, radius}
 	}
 }
 impl Hittable for Sphere{
@@ -33,16 +33,20 @@ impl Hittable for Sphere{
 		let sqrt_delta = delta.sqrt();
 		// Find the nearest root that lies in the acceptable range.
 		let mut root = (h - sqrt_delta) / a;
-		if root <= ray_tmin || root >= ray_tmax{
-			root = (h + sqrt_delta) / a;
-			if root <= ray_tmin || root >= ray_tmax{
-				return false;
-			}
+		// if root <= ray_tmin || root >= ray_tmax{
+		// 	root = (h + sqrt_delta) / a;
+		// 	if root <= ray_tmin || root >= ray_tmax{
+		// 		return false;
+		// 	}
+		// }
+
+		if root < ray_tmin || root > ray_tmax{
+			return false;
 		}
 
 		rec.t = root;
-        rec.p = r.at(rec.t);
-        let outward_normal = (rec.p + -self.center) / self.radius;
+        rec.point = r.at(rec.t);
+        let outward_normal = (rec.point + -self.center) / self.radius;
 		rec.set_face_normal(r, outward_normal);
 
 		true
@@ -50,15 +54,15 @@ impl Hittable for Sphere{
 }
 
 pub struct Plane{
-	p: Vec3,	// A point in the plane
-	n: Vec3,	// The plane's normal vector, normalized
+	point: Vec3,	// A point in the plane
+	normal: Vec3,	// The plane's normal vector, normalized
 }
 
 impl Plane{
-	pub fn new(p: Vec3, n: Vec3) -> Plane{
+	pub fn new(point: Vec3, normal: Vec3) -> Plane{
 		Plane{
-			p: p,
-			n: n
+			point,
+			normal
 		}
 	}
 }
@@ -68,14 +72,14 @@ impl Hittable for Plane{
 		// t = [ n . (p - o) ] / (n . d)
 		// gives us the t at which the ray intersects the plane
 		// if t == t_max or t is negative, we shot the ray into infinity
-		let t = (self.n.dot(&(self.p + -r.origin))) / (self.n.dot(&r.direction));
+		let t = (self.normal.dot(&(self.point + -r.origin))) / (self.normal.dot(&r.direction));
 		if t <= 0. || t >= ray_tmax{
 			return false;
 		}
 
 		rec.t = t;
-		rec.p = r.at(t);
-		rec.set_face_normal(r, self.p);
+		rec.point = r.at(t);
+		rec.set_face_normal(r, self.normal);
 		true
 	}
 }

@@ -23,7 +23,7 @@ impl Hittable for HittableList{
 
 #[derive(Clone, Copy)]
 pub struct HitRecord{
-	pub p: Vec3,
+	pub point: Vec3,
 	pub normal: Vec3,
 	pub t: f64,
 	pub front_face: bool
@@ -32,7 +32,7 @@ pub struct HitRecord{
 impl Default for HitRecord{
 	fn default() -> Self {
 		HitRecord{
-			p: Vec3::new(0., 0., 0.),
+			point: Vec3::new(0., 0., 0.),
 			normal: Vec3::new(0., 0., 0.),
 			t: 0.,
 			front_face: true

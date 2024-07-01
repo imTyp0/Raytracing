@@ -10,8 +10,11 @@ mod geometry;
 use geometry::*;
 use std::{fs, io::{self, Write}};
 
-const ASPECT_RATIO: f64 = 16. / 9.;
-const WIDTH: u16 = 400;
+const IMAGE_HEIGHT: u16 = 225;
+const IMAGE_WIDTH: u16 = 400;
+const ASPECT_RATIO: f64 = (IMAGE_HEIGHT as f64) / (IMAGE_WIDTH as f64);
+const VIEWPORT_HEIGHT: f64 = 2.0;
+const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT / ASPECT_RATIO;
 
 fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
 	start * (1. - a) + end * a
@@ -37,31 +40,28 @@ fn main() {
 		Setting up the scene
 	*/
 	// Calculate image height based on aspect ratio
-	const HEIGHT: u16 = (WIDTH as f64 / ASPECT_RATIO) as u16;
 	
 	// Adding objects to the world
 	let mut world = HittableList{
 		list: vec![]
 	};
-	// world.list.push(Box::new(Plane::new(
-	// 	Vec3::new(0., -1., 0.),
-	// 	Vec3::new(-1., 1., 0.).normalize()
-	// )));
 	world.list.push(Box::new(Plane::new(
 		Vec3::new(0., -1., 0.),
 		Vec3::new(0., 1., 0.)
 	)));
 	world.list.push(Box::new(Sphere::new(
-		Vec3::new(-2., 1., -5.), 1.
+		Vec3::new(0., 0., -2.), 1.
 	)));
 	world.list.push(Box::new(Sphere::new(
-		Vec3::new(2., 1., -3.), 1.
+		Vec3::new(3., 0., -2.), 1.
+	)));
+	world.list.push(Box::new(Sphere::new(
+		Vec3::new(-3., 0., -2.), 1.
 	)));
 
 	// Calculate constants relative to the camera
-	const FOCAL_LENGTH: f64 = 1.;
-	const VIEWPORT_HEIGHT: f64 = 2.0;
-	const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * ASPECT_RATIO;
+	// const FOCAL_LENGTH: f64 = 1.;
+	let focal_point = Vec3::new(0., 0., -0.5);
 	const CAMERA_CENTER: Vec3 = Vec3::zero();
 
 	// Calculate the vectors across the horizontal and down the vertical viewport edges
@@ -69,13 +69,12 @@ fn main() {
 	const VIEWPORT_V: Vec3 = Vec3::new(0., -VIEWPORT_HEIGHT, 0.);
 
 	// Calculate the horizontal and vertical delta vectors from pixel to pixel
-	let pixel_delta_u = VIEWPORT_U / WIDTH as f64;
-	let pixel_delta_v = VIEWPORT_V / HEIGHT as f64;
+	let pixel_delta_u = VIEWPORT_U / (IMAGE_WIDTH as f64);
+	let pixel_delta_v = VIEWPORT_V / (IMAGE_HEIGHT as f64);
 
 	// Calculate the location of the upper left pixel
-	let viewport_upper_left: Vec3 = 
-		CAMERA_CENTER + -Vec3::new(0., 0., FOCAL_LENGTH) + -VIEWPORT_U/2. + -VIEWPORT_V/2.;
-	let pixel00_loc: Vec3 = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+	let pixel00_loc: Vec3 =
+	Vec3::new(-VIEWPORT_WIDTH * 0.5, VIEWPORT_HEIGHT * 0.5, 0.) + focal_point + CAMERA_CENTER;
 
 	/* 
 		Rendering
@@ -85,16 +84,16 @@ fn main() {
 	let mut filp = fs::File::create("image.ppm").expect("Error creating the file.");
 
 	// Image header
-	let header = format!("P3\n{WIDTH} {HEIGHT}\n255\n");
+	let header = format!("P3\n{IMAGE_WIDTH} {IMAGE_HEIGHT}\n255\n");
 	filp.write(header.as_bytes()).expect("Error writing header.");
 
 	// Image body
-	for row in 0..HEIGHT{
+	for row in 0..IMAGE_HEIGHT{
 		// Print progress
-		print!("\rScanlines remaining: {} ", HEIGHT-row);
+		print!("\rScanlines remaining: {} ", IMAGE_HEIGHT-row);
 		io::stdout().flush().unwrap();
 
-		for col in 0..WIDTH{
+		for col in 0..IMAGE_WIDTH{
 			let pixel_center =
 				pixel00_loc + pixel_delta_u * (col as f64) + pixel_delta_v * (row as f64);
 			let ray_direction = pixel_center + -CAMERA_CENTER;
