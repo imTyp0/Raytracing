@@ -33,15 +33,11 @@ impl Hittable for Sphere{
 		let sqrt_delta = delta.sqrt();
 		// Find the nearest root that lies in the acceptable range.
 		let mut root = (h - sqrt_delta) / a;
-		// if root <= ray_tmin || root >= ray_tmax{
-		// 	root = (h + sqrt_delta) / a;
-		// 	if root <= ray_tmin || root >= ray_tmax{
-		// 		return false;
-		// 	}
-		// }
-
-		if root < ray_tmin || root > ray_tmax{
-			return false;
+		if root <= ray_tmin || root >= ray_tmax{
+			root = (h + sqrt_delta) / a;
+			if root <= ray_tmin || root >= ray_tmax{
+				return false;
+			}
 		}
 
 		rec.t = root;

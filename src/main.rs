@@ -12,9 +12,9 @@ use std::{fs, io::{self, Write}};
 
 const IMAGE_HEIGHT: u16 = 225;
 const IMAGE_WIDTH: u16 = 400;
-const ASPECT_RATIO: f64 = (IMAGE_HEIGHT as f64) / (IMAGE_WIDTH as f64);
-const VIEWPORT_HEIGHT: f64 = 2.0;
-const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT / ASPECT_RATIO;
+const ASPECT_RATIO: f64 = (IMAGE_WIDTH as f64) / (IMAGE_HEIGHT as f64);
+const VIEWPORT_HEIGHT: f64 = 4.0;
+const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * ASPECT_RATIO;
 
 fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
 	start * (1. - a) + end * a
@@ -23,7 +23,7 @@ fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
 // Returns the color of a given ray
 fn ray_color(r: &Ray, world: &HittableList) -> Color{
 	let mut hit_record = HitRecord::default();
-
+	
 	if world.hit(r, 0., f64::INFINITY, &mut hit_record){
 		return Color::new(
 			hit_record.normal.x+1., hit_record.normal.y+1., hit_record.normal.z+1.
@@ -50,7 +50,7 @@ fn main() {
 		Vec3::new(0., 1., 0.)
 	)));
 	world.list.push(Box::new(Sphere::new(
-		Vec3::new(0., 0., -2.), 1.
+		Vec3::new(0., 2., -2.), 1.
 	)));
 	world.list.push(Box::new(Sphere::new(
 		Vec3::new(3., 0., -2.), 1.
@@ -60,9 +60,8 @@ fn main() {
 	)));
 
 	// Calculate constants relative to the camera
-	// const FOCAL_LENGTH: f64 = 1.;
-	let focal_point = Vec3::new(0., 0., -0.5);
-	const CAMERA_CENTER: Vec3 = Vec3::zero();
+	let focal_point = Vec3::new(0., 0., -10.);
+	const CAMERA_CENTER: Vec3 = Vec3::new(0., 0., 15.);
 
 	// Calculate the vectors across the horizontal and down the vertical viewport edges
 	const VIEWPORT_U: Vec3 = Vec3::new(VIEWPORT_WIDTH, 0., 0.);
