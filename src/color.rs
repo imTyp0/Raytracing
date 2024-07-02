@@ -1,6 +1,12 @@
 pub use crate::vec3::Vec3 as Color;
 use std::{fs::File, io::Write};
 
+// Blend between two colors based on a parameter
+pub fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
+	start * (1. - a) + end * a
+}
+
+// Write a pixel's color to a file pointer (ppm format)
 pub fn write_color(filp: &mut File, pixel_color: &Color){
 	let r = pixel_color.x;
 	let g = pixel_color.y;
