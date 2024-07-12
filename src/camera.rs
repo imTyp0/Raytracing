@@ -8,7 +8,9 @@ use std::{fs, io::{self, Write}};
 pub struct Camera{
 	pub aspect_ratio: f64,
 	pub image_width: u32,
-	pub image_height: Option<u32>,
+    pub samples_per_pixel: u16,
+	pub max_bounces: u8,
+    pub image_height: Option<u32>,
 	pub center: Option<Vec3>,
 	pub pixel00_loc: Option<Vec3>,
 	pub pixel_delta_u: Option<Vec3>,
@@ -27,7 +29,7 @@ impl Camera{
 
 		// Image header
 		let header = format!("P3\n{} {}\n255\n", w, h);
-		filp.write(header.as_bytes()).expect("Error writing header.");
+		filp.write_all(header.as_bytes()).expect("Error writing header.");
 
 		// Image body
 		for row in 0..h{
@@ -36,15 +38,13 @@ impl Camera{
 			io::stdout().flush().unwrap();
 
 			for col in 0..w{
-				let pixel_center =
-					self.pixel00_loc.unwrap() + self.pixel_delta_u.unwrap() * (col as f64) + self.pixel_delta_v.unwrap() * (row as f64);
-				let ray_direction = pixel_center + -self.center.unwrap();
-
-				let r = Ray::new(self.center.unwrap(), ray_direction);
-				let pixel_color = Camera::ray_color(&r, &world);
-
-				write_color(&mut filp, &pixel_color);
-			}
+				let mut pixel_color = Color::zero();
+                for _sample in 0..self.samples_per_pixel{
+                    let r = self.get_ray(col, row);
+                    pixel_color = pixel_color + Camera::ray_color(&r, world, self.max_bounces);
+                }
+                write_color(&mut filp, pixel_color * (1_f64 /self.samples_per_pixel as f64));
+		    }
 		}
 
 		println!("\rDone.                 ");
@@ -78,15 +78,36 @@ impl Camera{
 	}
 
 	// Returns the color of a ray, based on what it hit
-	fn ray_color(r: &Ray, world: &HittableList) -> Color{
-		let mut hit_record = HitRecord::default();
-	
-		if world.hit(r, 0., f64::INFINITY, &mut hit_record){
-			return (hit_record.normal + Color::new(1., 1., 1.)) * 0.5;
+	fn ray_color(r: &Ray, world: &HittableList, depth: u8) -> Color{
+        // If we reached max number of bounces, return black
+        if depth == 0{
+            return Color::zero();
+        }
+
+        // If we hit an object in the world
+        let mut hit_record = HitRecord::default();
+		if world.hit(r, 0.001, f64::INFINITY, &mut hit_record){
+            let bounce_dir = Vec3::random_on_hemisphere(&hit_record.normal);
+            return Camera::ray_color(&Ray::new(hit_record.point, bounce_dir), world, depth-1) * 0.5;
 		}
-	
+        
+        // If we haven't hit anything, color the sky based on the height of the vector (gradient)
 		let normalized_r = r.direction.normalize();
 		let a = (normalized_r.y + 1.0) * 0.5;
 		lerp_colors(a, Color::new(1., 1., 1.), Color::new(0.5, 0.7, 1.))
 	}
+    // Makes a ray originating from the Camera, and pointed at a randomly sampled point around
+    // pixel (i, j)
+    fn get_ray(&self, i: u32, j: u32) -> Ray{
+        // Generate a random vector in the unit square [-0.5, -0.5] [0.5, 0.5]
+        let offset = Vec3::new(
+            rand::random::<f64>() - 0.5, rand::random::<f64>() - 0.5, 0.
+        );
+        let sample = self.pixel00_loc.unwrap() +
+            (self.pixel_delta_u.unwrap() * (i as f64 + offset.x)) +
+            (self.pixel_delta_v.unwrap() * (j as f64 + offset.y));
+        let direction = sample + -self.center.unwrap();
+
+        Ray::new(self.center.unwrap(), direction)
+    }
 }

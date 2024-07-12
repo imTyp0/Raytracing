@@ -7,17 +7,17 @@ pub fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
 }
 
 // Write a pixel's color to a file pointer (ppm format)
-pub fn write_color(filp: &mut File, pixel_color: &Color){
+pub fn write_color(filp: &mut File, pixel_color: Color){
 	let r = pixel_color.x;
 	let g = pixel_color.y;
 	let b = pixel_color.z;
 
 	// Take RGB [0,1] to RGB [0, 255]
-	let rbyte = (255.999 * r) as u8;
-	let gbyte = (255.999 * g) as u8;
-	let bbyte = (255.999 * b) as u8;
+	let rbyte = (256. * r.clamp(0., 0.999)) as u8;
+	let gbyte = (256. * g.clamp(0., 0.999)) as u8;
+	let bbyte = (256. * b.clamp(0., 0.999)) as u8;
 
 	// Write the RGB values of the pixel to the file
 	let line = format!("{rbyte} {gbyte} {bbyte}\n");
-	filp.write(line.as_bytes()).expect("Error writing a line.");
+	filp.write_all(line.as_bytes()).expect("Error writing a line.");
 }

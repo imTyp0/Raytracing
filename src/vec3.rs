@@ -1,4 +1,5 @@
 use std::ops::*;
+use rand::Rng;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3{
@@ -24,7 +25,7 @@ impl Vec3{
 	pub fn dot(&self, b: &Vec3) -> f64{
 		self.x*b.x + self.y*b.y + self.z*b.z
 	}
-	pub fn cross(&self, b: &Vec3) -> Vec3{
+	pub fn _cross(&self, b: &Vec3) -> Vec3{
 		Vec3::new(
 			self.y * b.z - self.z * b.y,
 			self.z * b.x - self.x * b.z,
@@ -39,6 +40,26 @@ impl Vec3{
 			self.z / len
 		)
 	}
+    pub fn random_range(min: f64, max: f64) -> Vec3{
+        let mut rng = rand::thread_rng();
+        Vec3::new(
+            rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max)
+        )
+    }
+    pub fn random_on_hemisphere(normal: &Vec3) -> Vec3{
+        loop{
+            let v = Vec3::random_range(-1., 1.);
+            if v.len_squared() <= 1.{
+                // Dot product > 0 if pointing in the same direction
+                if v.normalize().dot(normal) > 0.{
+                    return v;
+                }
+                else{
+                    return -v;
+                }
+            }
+        }
+    }
 }
 
 // Operators
