@@ -9,6 +9,8 @@ mod ray;
 mod vec3;
 use vec3::Vec3;
 
+use std::time::Instant;
+
 fn main() {
 	/* 
 		Setting up the scene
@@ -41,7 +43,12 @@ fn main() {
 		center: Some(Vec3::new(0., 0., 15.)),
 		..Default::default()
 	};
+    
+    // Benchmarking
+    let before_render = Instant::now();
 
 	// Rendering
 	cam.render(&world);
+
+    println!("Took {} seconds to render.", before_render.elapsed().as_secs());
 }

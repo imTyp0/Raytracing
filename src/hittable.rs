@@ -1,7 +1,11 @@
 use crate::{vec3::Vec3, ray::Ray};
+use std::marker::Sync;
+
 pub struct HittableList{
 	pub list: Vec<Box<dyn Hittable>>
 }
+
+unsafe impl Sync for HittableList {}
 
 impl Hittable for HittableList{
 	fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64, rec: &mut HitRecord) -> bool {

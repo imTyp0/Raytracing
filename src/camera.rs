@@ -2,7 +2,12 @@ use crate::color::*;
 use crate::hittable::*;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
-use std::{fs, io::{self, Write}};
+use std::{
+    fs,
+    io::{self, Write},
+    sync::{Arc, Mutex}
+};
+use rayon::prelude::*;
 
 #[derive(Default)]
 pub struct Camera{
@@ -21,8 +26,8 @@ impl Camera{
 	// Render a list of hittable objects
 	pub fn render(&mut self, world: &HittableList){
 		self.initialize();
-		let h = self.image_height.unwrap();
-		let w = self.image_width;
+		let h = self.image_height.unwrap() as usize;
+		let w = self.image_width as usize;
 
 		// Output file pointer
 		let mut filp = fs::File::create("image.ppm").expect("Error creating the file.");
@@ -30,22 +35,32 @@ impl Camera{
 		// Image header
 		let header = format!("P3\n{} {}\n255\n", w, h);
 		filp.write_all(header.as_bytes()).expect("Error writing header.");
+        
+        // Buffer for the pixel colors
+        let pixel_colors: Arc<Mutex<Vec<Color>>> = Arc::new(Mutex::new(vec![Color::zero(); h*w]));
 
-		// Image body
-		for row in 0..h{
-			// Print progress
-			print!("\rLines remaining: {} ", h-row);
-			io::stdout().flush().unwrap();
+        // Image body
+        (0..h).into_par_iter().for_each(|row|{
+			// Increment counter and print progress every 10 lines
+            print!("\rLines remaining: {}", h-row);
+            io::stdout().flush().unwrap();
 
 			for col in 0..w{
 				let mut pixel_color = Color::zero();
                 for _sample in 0..self.samples_per_pixel{
-                    let r = self.get_ray(col, row);
+                    let r = self.get_ray(col as u32, row as u32);
                     pixel_color = pixel_color + Camera::ray_color(&r, world, self.max_bounces);
                 }
-                write_color(&mut filp, pixel_color * (1_f64 /self.samples_per_pixel as f64));
+                let mut colors_lock = pixel_colors.lock().unwrap();
+                colors_lock[row * w + col] = pixel_color * (1_f64 / self.samples_per_pixel as f64);
+                // write_color(&mut filp, pixel_color * (1_f64 /self.samples_per_pixel as f64);
 		    }
-		}
+		});
+        
+        let colors_lock = pixel_colors.lock().unwrap();
+        colors_lock.iter().for_each(|c| {
+            write_color(&mut filp, *c);
+        });
 
 		println!("\rDone.                 ");
 	}
