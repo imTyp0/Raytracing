@@ -4,8 +4,7 @@ use crate::ray::Ray;
 use crate::vec3::Vec3;
 use std::{
     fs,
-    io::{self, Write},
-    sync::{Arc, Mutex}
+    io::{self, Write}
 };
 use rayon::prelude::*;
 
@@ -37,32 +36,34 @@ impl Camera{
 		filp.write_all(header.as_bytes()).expect("Error writing header.");
         
         // Buffer for the pixel colors
-        let pixel_colors: Arc<Mutex<Vec<Color>>> = Arc::new(Mutex::new(vec![Color::zero(); h*w]));
+        let mut image = vec![vec![Color::zero(); w]; h];
+
+        // Pixel counter
+        let mut samples_done = 0;
 
         // Image body
-        (0..h).into_par_iter().for_each(|row|{
-			// Increment counter and print progress every 10 lines
-            print!("\rLines remaining: {}", h-row);
+        while samples_done < self.samples_per_pixel{
+            // For each pixel of the image
+            image.par_iter_mut().enumerate().for_each(|(y, row)|{
+                row.par_iter_mut().enumerate().for_each(|(x, col)|{
+                    let ray = self.get_ray(x as u32, y as u32);
+                    let pixel_color = Camera::ray_color(&ray, world, self.max_bounces);
+                    *col += pixel_color * 1_f64 / self.samples_per_pixel as f64;
+                });
+            });
+            samples_done += 1;
+
+            // Print progress
+            print!("\r{}/{} samples done.", samples_done, self.samples_per_pixel);
             io::stdout().flush().unwrap();
-
-			for col in 0..w{
-				let mut pixel_color = Color::zero();
-                for _sample in 0..self.samples_per_pixel{
-                    let r = self.get_ray(col as u32, row as u32);
-                    pixel_color = pixel_color + Camera::ray_color(&r, world, self.max_bounces);
-                }
-                let mut colors_lock = pixel_colors.lock().unwrap();
-                colors_lock[row * w + col] = pixel_color * (1_f64 / self.samples_per_pixel as f64);
-                // write_color(&mut filp, pixel_color * (1_f64 /self.samples_per_pixel as f64);
-		    }
-		});
+        }
         
-        let colors_lock = pixel_colors.lock().unwrap();
-        colors_lock.iter().for_each(|c| {
-            write_color(&mut filp, *c);
-        });
-
-		println!("\rDone.                 ");
+        // Iterate through the image and write to file pointer.
+        println!("\rWriting to file...");
+        for &color in image.iter().flat_map(|row| row.iter()){
+            write_color(&mut filp, color);
+        }
+        println!("\rDone.                 ");
 	}
 
 	// Initialize the camera values or leave them as is
@@ -102,7 +103,8 @@ impl Camera{
         // If we hit an object in the world
         let mut hit_record = HitRecord::default();
 		if world.hit(r, 0.001, f64::INFINITY, &mut hit_record){
-            let bounce_dir = Vec3::random_on_hemisphere(&hit_record.normal);
+            // let bounce_dir = Vec3::random_on_hemisphere(&hit_record.normal);
+            let bounce_dir = hit_record.normal + Vec3::random_range(-1., 1.).normalize();
             return Camera::ray_color(&Ray::new(hit_record.point, bounce_dir), world, depth-1) * 0.5;
 		}
         

@@ -46,7 +46,7 @@ impl Vec3{
             rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max)
         )
     }
-    pub fn random_on_hemisphere(normal: &Vec3) -> Vec3{
+    pub fn _random_on_hemisphere(normal: &Vec3) -> Vec3{
         loop{
             let v = Vec3::random_range(-1., 1.);
             if v.len_squared() <= 1.{
@@ -80,6 +80,13 @@ impl Add<f64> for Vec3{
 	fn add(self, rhs: f64) -> Vec3{
 		Vec3::new(self.x + rhs, self.y + rhs, self.z + rhs)
 	}
+}
+impl AddAssign for Vec3{
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
 }
 impl Mul<f64> for Vec3{
 	type Output = Vec3;

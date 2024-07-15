@@ -8,9 +8,10 @@ pub fn lerp_colors(a: f64, start: Color, end: Color) -> Color{
 
 // Write a pixel's color to a file pointer (ppm format)
 pub fn write_color(filp: &mut File, pixel_color: Color){
-	let r = pixel_color.x;
-	let g = pixel_color.y;
-	let b = pixel_color.z;
+	// Taking the sqrt() means going from linear color space to gamma corrected space
+    let r = pixel_color.x.sqrt();
+	let g = pixel_color.y.sqrt();
+	let b = pixel_color.z.sqrt();
 
 	// Take RGB [0,1] to RGB [0, 255]
 	let rbyte = (256. * r.clamp(0., 0.999)) as u8;

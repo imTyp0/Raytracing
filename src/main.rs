@@ -5,6 +5,7 @@ mod geometry;
 use geometry::*;
 mod hittable;
 use hittable::HittableList;
+mod material;
 mod ray;
 mod vec3;
 use vec3::Vec3;
@@ -38,8 +39,8 @@ fn main() {
 	let mut cam = Camera{
 		aspect_ratio: 16. /9.,
 		image_width: 800,
-        samples_per_pixel: 16,
-        max_bounces: 6,
+        samples_per_pixel: 12,
+        max_bounces: 8,
 		center: Some(Vec3::new(0., 0., 15.)),
 		..Default::default()
 	};
@@ -50,5 +51,5 @@ fn main() {
 	// Rendering
 	cam.render(&world);
 
-    println!("Took {} seconds to render.", before_render.elapsed().as_secs());
+    println!("Took {} seconds to render.", before_render.elapsed().as_millis() as f64 / 1000.);
 }
